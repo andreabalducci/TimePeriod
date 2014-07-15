@@ -7,6 +7,7 @@
 // copyright  : (c) 2011-2012 by Itenso GmbH, Switzerland
 // --------------------------------------------------------------------------
 using System;
+using System.Linq;
 using Itenso.TimePeriod;
 using NUnit.Framework;
 
@@ -192,6 +193,34 @@ namespace Itenso.TimePeriodTests
 			collector3.CollectDays();
 			Assert.AreEqual( collector3.Periods.Count, workingDays2011 - workingDaysMarch2011 - 10 );
 		} // CollectExcludePeriodTest
+
+        [Test]
+        public void Excluded_slot()
+        {
+            var filter = new CalendarPeriodCollectorFilter();
+            filter.AddWorkingWeekDays();
+            filter.CollectingHours.Add(new HourRange(8, 12)); // working hours
+            filter.CollectingHours.Add(new HourRange(14, 18)); // working hours
+
+            filter.ExcludePeriods.Add(new CalendarTimeRange(
+                DateTime.Parse("2014-07-15T09:30"),
+                DateTime.Parse("2014-07-15T10:30")
+            ));
+
+            var testPeriod = new CalendarTimeRange(new DateTime(2014, 7, 14), new DateTime(2014, 7, 31));
+            Console.WriteLine("Calendar period collector of period: " + testPeriod);
+
+            var collector = new CalendarPeriodCollector(filter, testPeriod);
+            collector.CollectHours();
+            foreach (ITimePeriod period in collector.Periods)
+            {
+                Console.WriteLine("Period: " + period);
+            }
+
+            Assert.IsFalse(collector.Periods.Any(x=>x.HasInside(DateTime.Parse("2014-07-15T10:00"))));
+            Assert.IsTrue(collector.Periods.Any(x=>x.HasInside(DateTime.Parse("2014-07-15T09:00"))));
+            Assert.IsTrue(collector.Periods.Any(x=>x.HasInside(DateTime.Parse("2014-07-15T11:00"))));
+        }
 
 	} // class CalendarPeriodCollectorTest
 
